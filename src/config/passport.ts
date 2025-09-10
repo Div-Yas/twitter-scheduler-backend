@@ -10,7 +10,7 @@ export const configurePassport = () => {
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
         callbackURL: process.env.GOOGLE_CALLBACK_URL || "/api/auth/google/callback"
       },
-      async (_accessToken, _refreshToken, profile, done) => {
+      async (_accessToken: string, _refreshToken: string, profile: any, done: (err: any, user?: any) => void) => {
         try {
           const email = profile.emails?.[0]?.value || `${profile.id}@google.local`;
           let user = await User.findOne({ googleId: profile.id });
