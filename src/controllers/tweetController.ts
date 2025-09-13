@@ -28,7 +28,16 @@ export const createTweet = async (req: Request, res: Response) => {
 export const getTweets = async (req: Request, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, data: null, message: "Not authorized" });
-    const tweets = await Tweet.find({ user: req.user._id });
+    
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = page * limit;
+    
+    const tweets = await Tweet.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
     return res.json({ success: true, data: tweets, message: "Tweets fetched" });
   } catch (error) {
     return res.status(500).json({ success: false, data: null, message: "Server error" });
@@ -79,6 +88,28 @@ export const deleteTweet = async (req: Request, res: Response) => {
     cancelTweetSchedule(tweet._id.toString());
     io.emit("tweet:deleted", { id: tweet._id.toString() });
     return res.json({ success: true, data: null, message: "Tweet deleted" });
+  } catch (error) {
+    return res.status(500).json({ success: false, data: null, message: "Server error" });
+  }
+};
+
+export const simulatePost = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, data: null, message: "Not authorized" });
+    const { id } = req.params as { id: string };
+    const tweet = await Tweet.findOne({ _id: id, user: req.user._id });
+    if (!tweet) return res.status(404).json({ success: false, data: null, message: "Tweet not found" });
+    
+    // Simulate posting with random engagement metrics
+    const updated = await Tweet.findByIdAndUpdate(tweet._id, { 
+      status: "posted", 
+      impressions: Math.floor(Math.random() * 1000) + 100, 
+      likes: Math.floor(Math.random() * 300) + 10, 
+      retweets: Math.floor(Math.random() * 150) + 5 
+    }, { new: true });
+    
+    io.emit("tweet:posted", { id: tweet._id.toString(), tweet: updated });
+    return res.json({ success: true, data: updated, message: "Tweet posted with simulated engagement" });
   } catch (error) {
     return res.status(500).json({ success: false, data: null, message: "Server error" });
   }

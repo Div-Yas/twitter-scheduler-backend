@@ -2,7 +2,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
+// Store uploads under the backend directory for consistency
+const uploadsDir = path.join(__dirname, "../../uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
